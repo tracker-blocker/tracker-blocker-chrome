@@ -1,0 +1,7 @@
+[
+    {
+        "domain": "something.com",
+        "owner": "Something Inc.",
+        "rule": "regex"
+    }
+]
