@@ -6,7 +6,7 @@
     "background": {
         "service_worker": "background.js"
     },
-    "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
+    "permissions": ["storage", "webRequest", "webRequestBlocking", "<all_urls>"],
     "browser_action":{
         "default_popup": "popup.html"
     },
