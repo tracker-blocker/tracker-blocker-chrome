@@ -1,13 +1,13 @@
-
-// const re = RegExp("google-analytics\.com\/analytics\.js")
 let domainRegex = null
 let domains = {}
 
 const isTracker = (url) => {
     if (domainRegex) {
-        // TODO: Implement proper logic here
-
-        return domainRegex.test(url)
+        allMatches = url.matchAll(domainRegex)
+        for (match of allMatches) {
+            if (domains[match[0]].hardblock) { return true }
+            if (RegExp(domains[match[0]].rules).test(url)) { return true }
+        }
     }
     return false
 }
@@ -20,7 +20,7 @@ const storeData = async () => {
 
     chrome.storage.local.set({"tbDomainRegex": responseJson.domainRegex}, () => {
         console.log("Domain regex set.")
-        domainRegex = RegExp(responseJson.domainRegex)
+        domainRegex = responseJson.domainRegex
     })
 
     chrome.storage.local.set({"tbDomains": responseJson.domains}, () => {
@@ -39,7 +39,8 @@ chrome.runtime.onStartup.addListener(()=>{
 })
 
 chrome.webRequest.onBeforeRequest.addListener((details) => {
-        if (isTracker(details.url)) {
+    // console.log("details", details)
+    if (isTracker(details.url)) {
             console.log(details.url)
             console.log('gotcha!')
             return { cancel: true}
@@ -49,5 +50,4 @@ chrome.webRequest.onBeforeRequest.addListener((details) => {
     {urls: ["<all_urls>"]},
     ["blocking"]
 )
-
 
