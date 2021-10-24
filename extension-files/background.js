@@ -1,12 +1,32 @@
 let domainRegex = null
 let domains = {}
 
-const isTracker = (url) => {
+const blockedInfo = {}
+// {"tabId@initiator":{"count": 1, "blocked": []}}
+
+const setBadgeInfo = (tabId, initiator, domain) => {
+    console.log('sent:', tabId, domain, initiator)
+    key = `${tabId}@${initiator}`
+    if (key in blockedInfo) {
+        blockedInfo[key].blocked.add(domain)
+        blockedInfo[key].count = blockedInfo[key].blocked.size
+    } else {
+        blockedInfo[key] = {"count": 1, "blocked": new Set([domain])}
+    }
+
+    chrome.browserAction.setBadgeText({ tabId: tabId, text: blockedInfo[key].count.toString() })
+}
+
+const isTracker = (url, tabId, initiator) => {
     if (domainRegex) {
         allMatches = url.matchAll(domainRegex)
         for (match of allMatches) {
-            if (domains[match[0]].hardblock) { return true }
-            if (RegExp(domains[match[0]].rules).test(url)) { return true }
+            if (
+                domains[match[0]].hardblock || RegExp(domains[match[0]].rules).test(url)
+            ) {
+                setBadgeInfo(tabId, initiator, match[0])
+                return true
+            }
         }
     }
     return false
@@ -40,7 +60,7 @@ chrome.runtime.onStartup.addListener(()=>{
 
 chrome.webRequest.onBeforeRequest.addListener((details) => {
     // console.log("details", details)
-    if (isTracker(details.url)) {
+    if (details.tabId != -1 && isTracker(details.url, details.tabId, details.initiator)) {
             console.log(details.url)
             console.log('gotcha!')
             return { cancel: true}
@@ -51,3 +71,15 @@ chrome.webRequest.onBeforeRequest.addListener((details) => {
     ["blocking"]
 )
 
+
+// {
+//     frameId: -1
+//     initiator: "chrome-extension://lichhobjaapckkmkfikjbigjilmcimoi"
+//     method: "GET"
+//     parentFrameId: -1
+//     requestId: "21128"
+//     tabId: -1
+//     timeStamp: 1635089437272.0562
+//     type: "xmlhttprequest"
+//     url: "https://raw.githubusercontent.com/tracker-blocker/tracker-blo
+// }
