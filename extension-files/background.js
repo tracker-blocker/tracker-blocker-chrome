@@ -2,10 +2,9 @@ let domainRegex = null
 let domains = {}
 
 const blockedInfo = {}
-// {"tabId@initiator":{"count": 1, "blocked": []}}
+// {"tabId@initiator":{"count": 1, "blocked": Set([])}}
 
 const setBadgeInfo = (tabId, initiator, domain) => {
-    console.log('sent:', tabId, domain, initiator)
     key = `${tabId}@${initiator}`
     if (key in blockedInfo) {
         blockedInfo[key].blocked.add(domain)
@@ -47,6 +46,7 @@ const storeData = async () => {
         console.log("Tracker domain information stored.")
         domains = responseJson.domains
     })
+    chrome.browserAction.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
 }
 
 chrome.runtime.onInstalled.addListener(()=>{
@@ -59,17 +59,30 @@ chrome.runtime.onStartup.addListener(()=>{
 })
 
 chrome.webRequest.onBeforeRequest.addListener((details) => {
-    // console.log("details", details)
-    if (details.tabId != -1 && isTracker(details.url, details.tabId, details.initiator)) {
+    if (details.tabId != -1 && details.initiator) {
+        const hostname = new URL(details.initiator).hostname
+        if (isTracker(details.url, details.tabId, hostname)) {
             console.log(details.url)
             console.log('gotcha!')
             return { cancel: true}
         }
         return { cancel: false};
+        }
     },
     {urls: ["<all_urls>"]},
     ["blocking"]
 )
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if ((request.from == "popup")) {
+        const hostname = new URL(request.tabs[0].url).hostname
+
+        const tabBlocks = [...blockedInfo[`${request.tabs[0].id}@${hostname}`].blocked]
+        console.log("received from popup", request)
+        console.log("sending to popup", tabBlocks, blockedInfo, hostname, request.tabs[0].id)
+        sendResponse({tabBlocks: tabBlocks})
+    }
+})
 
 
 // {
