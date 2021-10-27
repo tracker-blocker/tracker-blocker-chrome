@@ -4,10 +4,24 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <link rel="stylesheet" href="popup.css">
+    <title>Tracker Blocker popup</title>
 </head>
 <body>
-    <p id="content">Test contents</p>
+    <div id="header">
+        <img src="images/icons/tracker-blocker-logo_48.png" id="header-image">
+        <h3 id="header-title">Tracker Blocker</h3>
+    </div>
+    <div id="site-options">
+        <p>BLOCK TRACKERS FROM THIS SITE</p>
+        <!-- <button id="stop-blocking">Yes</button> -->
+        <label class="switch">
+            <input type="checkbox">
+            <span class="slider round"></span>
+        </label>
+    </div>
+    <hr>
+    <div id="blocked-sites"></div>
     <script src="popup.js"></script>
 </body>
 </html>

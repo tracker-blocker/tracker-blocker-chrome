@@ -20,6 +20,8 @@ const isTracker = (url, tabId, initiator) => {
     if (domainRegex) {
         allMatches = url.matchAll(domainRegex)
         for (match of allMatches) {
+            // console.log("match, initiator...", match[0], initiator, url)
+            if (initiator.includes(match[0])) { continue }
             if (
                 domains[match[0]].hardblock || RegExp(domains[match[0]].rules).test(url)
             ) {
@@ -77,7 +79,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if ((request.from == "popup")) {
         const hostname = new URL(request.tabs[0].url).hostname
 
-        const tabBlocks = [...blockedInfo[`${request.tabs[0].id}@${hostname}`].blocked]
+        const blockedSiteInfo = blockedInfo[`${request.tabs[0].id}@${hostname}`]
+        let tabBlocks = []
+        if (blockedSiteInfo) { tabBlocks = [...blockedSiteInfo.blocked]}
+
         console.log("received from popup", request)
         console.log("sending to popup", tabBlocks, blockedInfo, hostname, request.tabs[0].id)
         sendResponse({tabBlocks: tabBlocks})
