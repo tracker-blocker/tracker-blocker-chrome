@@ -12,7 +12,9 @@ const addToList = (parent, array) => {
 
         const ownerRow = document.createElement("p")
         ownerRow.className = 'owner'
-        ownerRow.innerText = item.owner
+
+        ownerRow.innerText = item.owner ? item.owner : 'unidentified owner'
+
         row.appendChild(ownerRow)
 
         parent.appendChild(row)

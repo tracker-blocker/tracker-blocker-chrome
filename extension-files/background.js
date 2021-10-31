@@ -5,9 +5,17 @@ let unblockedDomains = []
 
 const blockedInfo = {}
 // {"tabId@initiator":{"count": 1, "blocked": Set([])}}
+const lastParent = {}
+//{"tabId": "domain"}
 
-const setBadgeInfo = (tabId, initiator, domain) => {
-    key = `${tabId}@${initiator}`
+const setBadgeInfo = (tabId, parentFrameId, initiator, domain) => {
+    let hostname = initiator
+    // tracks requests happening inside the request chain
+    if (parentFrameId != -1) {
+        hostname = lastParent[tabId]
+    }
+
+    key = `${tabId}@${hostname}`
     if (key in blockedInfo) {
         blockedInfo[key].blocked.add(domain)
         blockedInfo[key].count = blockedInfo[key].blocked.size
@@ -18,7 +26,7 @@ const setBadgeInfo = (tabId, initiator, domain) => {
     chrome.browserAction.setBadgeText({ tabId: tabId, text: blockedInfo[key].count.toString() })
 }
 
-const isTracker = (url, tabId, initiator) => {
+const isTracker = (url, tabId, parentFrameId, initiator) => {
     if (domainRegex) {
         allMatches = url.matchAll(domainRegex)
         for (match of allMatches) {
@@ -28,7 +36,7 @@ const isTracker = (url, tabId, initiator) => {
             if (
                 domains[match[0]].hardblock || RegExp(domains[match[0]].rules).test(url)
             ) {
-                setBadgeInfo(tabId, initiator, match[0])
+                setBadgeInfo(tabId, parentFrameId, initiator, match[0])
                 return true
             }
         }
@@ -61,7 +69,6 @@ const storeData = async () => {
 
 chrome.runtime.onInstalled.addListener(() => {
     storeData()
-    console.log("domain regex", domainRegex)
 })
 
 chrome.runtime.onStartup.addListener(()=>{
@@ -71,7 +78,10 @@ chrome.runtime.onStartup.addListener(()=>{
 chrome.webRequest.onBeforeRequest.addListener((details) => {
     if (details.tabId != -1 && details.initiator) {
         const hostname = new URL(details.initiator).hostname
-        if (!unblockedDomains.includes(hostname) && isTracker(details.url, details.tabId, hostname)) {
+        if (details.parentFrameId == -1) {
+            lastParent[details.tabId] = hostname
+        }
+        if (!unblockedDomains.includes(hostname) && isTracker(details.url, details.tabId, details.parentFrameId, hostname)) {
             console.log(details.url)
             console.log('gotcha!')
             return { cancel: true}
