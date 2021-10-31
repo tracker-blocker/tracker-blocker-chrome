@@ -16,6 +16,8 @@ body {
 
 #header-image {
     flex: 1;
+    height: auto;
+    width: 20%;
 }
 #header-title {
     flex: 5;
@@ -50,7 +52,6 @@ body {
 }
 
 .item .domain {
-    /* margin-top: 10px; */
     margin-bottom: 4px;
 }
 .item .owner {
