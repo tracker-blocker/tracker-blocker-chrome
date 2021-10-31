@@ -1,7 +1,8 @@
 body {
-    /* height: 200px; */
     width: 300px;
     max-height: 400px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 #header {
@@ -9,7 +10,8 @@ body {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
+    padding-bottom: 10px;
+    padding-top: 10px;
 }
 
 #header-image {
@@ -20,8 +22,14 @@ body {
     margin: 10px
 }
 
-.blocked-sites {
+#blocked-sites {
     overflow-y: scroll;
+    max-height: 300px;
+}
+
+#tracker-list-title {
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 #site-options {
@@ -29,8 +37,6 @@ body {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    /* height: 20px; */
 }
 
 #site-options p {
@@ -41,6 +47,18 @@ body {
 #stop-blocking {
     flex: 1;
     margin-left: 40px;
+}
+
+.item .domain {
+    /* margin-top: 10px; */
+    margin-bottom: 4px;
+}
+.item .owner {
+    margin-top: 0px;
+    color: #636e72;
+}
+#empty-item {
+    color: #636e72;
 }
 
 :root {

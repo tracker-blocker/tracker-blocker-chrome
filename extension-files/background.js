@@ -22,8 +22,9 @@ const isTracker = (url, tabId, initiator) => {
     if (domainRegex) {
         allMatches = url.matchAll(domainRegex)
         for (match of allMatches) {
-            // console.log("match, initiator...", match[0], initiator, url)
+            // e.g. don't block facebook trackers when visiting facebook.com
             if (initiator.includes(match[0])) { continue }
+
             if (
                 domains[match[0]].hardblock || RegExp(domains[match[0]].rules).test(url)
             ) {
@@ -90,7 +91,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         const blockedSiteInfo = blockedInfo[`${request.tabs[0].id}@${hostname}`]
         let tabBlocks = []
-        if (blockedSiteInfo) { tabBlocks = [...blockedSiteInfo.blocked]}
+
+        if (!isUnblocked && blockedSiteInfo) {
+            console.log("type", typeof(blockedSiteInfo.blocked), blockedSiteInfo.blocked)
+            const blocks = [...blockedSiteInfo.blocked].map((domain) => { return {"domain": domain, "owner": domains[domain].owner} })
+            tabBlocks = [...blocks]
+        }
 
         console.log("received from popup", request)
         console.log("sending to popup", tabBlocks, blockedInfo, hostname, request.tabs[0].id)
