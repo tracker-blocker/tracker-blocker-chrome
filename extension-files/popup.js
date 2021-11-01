@@ -1,4 +1,3 @@
-console.log('popup is here!')
 
 const addToList = (parent, array) => {
     for (item of array) {
@@ -29,7 +28,6 @@ const addToList = (parent, array) => {
 
 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
     chrome.runtime.sendMessage({from: "popup", subject: "fetchPopupData", tabs: tabs}, (response) => {
-        console.log("blocklist", response.tabBlocks)
         addToList(document.getElementById("blocked-sites"), response.tabBlocks)
 
         document.getElementById('site-tracker-switch').checked = !response.isUnblocked
@@ -42,13 +40,9 @@ const toggleSiteTracker = () => {
     chrome.tabs.query({active: true, currentWindow: true}, tabs => {
         const hostname = new URL(tabs[0].url).hostname
         if (!trackerSwitch) {
-            chrome.runtime.sendMessage({from: "popup", subject: "unblockTracker", domain: hostname}, (response) => {
-                console.log("received:", response.status)
-            })
+            chrome.runtime.sendMessage({from: "popup", subject: "unblockTracker", domain: hostname})
         } else {
-            chrome.runtime.sendMessage({from: "popup", subject: "blockTracker", domain: hostname}, (response) => {
-                console.log("received:", response.status)
-            })
+            chrome.runtime.sendMessage({from: "popup", subject: "blockTracker", domain: hostname})
         }
     })
 }

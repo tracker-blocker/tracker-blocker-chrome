@@ -44,6 +44,52 @@ const isTracker = (url, tabId, parentFrameId, initiator) => {
     return false
 }
 
+const onBeforeRequestHandler = (details) => {
+    if (details.tabId != -1 && details.initiator) {
+        const hostname = new URL(details.initiator).hostname
+    if (details.parentFrameId == -1) {
+        lastParent[details.tabId] = hostname
+    }
+    if (!unblockedDomains.includes(hostname) && isTracker(details.url, details.tabId, details.parentFrameId, hostname)) {
+        return { cancel: true}
+    }
+    return { cancel: false};
+    }
+}
+
+const onMessageHandler = (request, sender, sendResponse) => {
+    if (request.from == "popup" && request.subject == "fetchPopupData") {
+        const hostname = new URL(request.tabs[0].url).hostname
+
+        isUnblocked = unblockedDomains.includes(hostname)
+
+        const blockedSiteInfo = blockedInfo[`${request.tabs[0].id}@${hostname}`]
+        let tabBlocks = []
+
+        if (!isUnblocked && blockedSiteInfo) {
+            const blocks = [...blockedSiteInfo.blocked].map((domain) => { return {"domain": domain, "owner": domains[domain].owner} })
+            tabBlocks = [...blocks]
+        }
+
+        sendResponse({tabBlocks: tabBlocks, isUnblocked: isUnblocked})
+    }
+
+    if (request.from == "popup" && request.subject == "unblockTracker") {
+        sendResponse({status: "to popup: done!"})
+        unblockedDomains.push(request.domain)
+        chrome.storage.local.set({"tbUnblockedList": unblockedDomains}, () => {
+            console.log("current unblock list", unblockedDomains)
+        })
+    }
+    if (request.from == "popup" && request.subject == "blockTracker") {
+        unblockedDomains = unblockedDomains.filter(domain => domain !== request.domain)
+        chrome.storage.local.set({"tbUnblockedList": unblockedDomains}, () => {
+            console.log("current unblock list", unblockedDomains)
+        })
+        sendResponse({status: "to popup: done!"})
+    }
+}
+
 const storeData = async () => {
     const url = "https://raw.githubusercontent.com/tracker-blocker/tracker-blocker-data/master/block.compiled.minified.json"
 
@@ -61,8 +107,9 @@ const storeData = async () => {
     })
 
     chrome.storage.local.get(["tbUnblockedList"], (unblockList) => {
-        console.log("loadedunblocklist", unblockList.tbUnblockedList)
-        unblockedDomains = unblockList.tbUnblockedList
+        if (unblockList.tbUnblockedList) {
+            unblockedDomains = unblockList.tbUnblockedList
+        }
     })
     chrome.browserAction.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
 }
@@ -75,60 +122,12 @@ chrome.runtime.onStartup.addListener(()=>{
     storeData()
 })
 
-chrome.webRequest.onBeforeRequest.addListener((details) => {
-    if (details.tabId != -1 && details.initiator) {
-        const hostname = new URL(details.initiator).hostname
-        if (details.parentFrameId == -1) {
-            lastParent[details.tabId] = hostname
-        }
-        if (!unblockedDomains.includes(hostname) && isTracker(details.url, details.tabId, details.parentFrameId, hostname)) {
-            console.log(details.url)
-            console.log('gotcha!')
-            return { cancel: true}
-        }
-        return { cancel: false};
-        }
-    },
+chrome.webRequest.onBeforeRequest.addListener((details) => onBeforeRequestHandler(details),
     {urls: ["<all_urls>"]},
     ["blocking"]
 )
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.from == "popup" && request.subject == "fetchPopupData") {
-        const hostname = new URL(request.tabs[0].url).hostname
-
-        isUnblocked = unblockedDomains.includes(hostname)
-
-        const blockedSiteInfo = blockedInfo[`${request.tabs[0].id}@${hostname}`]
-        let tabBlocks = []
-
-        if (!isUnblocked && blockedSiteInfo) {
-            console.log("type", typeof(blockedSiteInfo.blocked), blockedSiteInfo.blocked)
-            const blocks = [...blockedSiteInfo.blocked].map((domain) => { return {"domain": domain, "owner": domains[domain].owner} })
-            tabBlocks = [...blocks]
-        }
-
-        console.log("received from popup", request)
-        console.log("sending to popup", tabBlocks, blockedInfo, hostname, request.tabs[0].id)
-        sendResponse({tabBlocks: tabBlocks, isUnblocked: isUnblocked})
-    }
-
-    if (request.from == "popup" && request.subject == "unblockTracker") {
-        console.log("from popup:", request.domain)
-        sendResponse({status: "to popup: done!"})
-        unblockedDomains.push(request.domain)
-        chrome.storage.local.set({"tbUnblockedList": unblockedDomains}, () => {
-            console.log("current unblock list", unblockedDomains)
-        })
-    }
-    if (request.from == "popup" && request.subject == "blockTracker") {
-        unblockedDomains = unblockedDomains.filter(domain => domain !== request.domain)
-        chrome.storage.local.set({"tbUnblockedList": unblockedDomains}, () => {
-            console.log("current unblock list", unblockedDomains)
-        })
-        sendResponse({status: "to popup: done!"})
-    }
-})
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => onMessageHandler(request, sender, sendResponse))
 
 
 // {
