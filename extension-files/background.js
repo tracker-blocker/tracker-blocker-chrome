@@ -45,7 +45,7 @@ const isTracker = (url, tabId, parentFrameId, initiator) => {
 }
 
 const onBeforeRequestHandler = (details) => {
-    if (details.tabId != -1 && details.initiator) {
+    if (details.tabId != -1 && details.initiator && details.initiator != 'null') {
         const hostname = new URL(details.initiator).hostname
     if (details.parentFrameId == -1) {
         lastParent[details.tabId] = hostname
