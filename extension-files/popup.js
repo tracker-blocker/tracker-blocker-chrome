@@ -21,7 +21,7 @@ const addToList = (parent, array) => {
     if (!array.length) {
         const empty = document.createElement("p")
         empty.id = "empty-item"
-        empty.innerText = 'No trackers to block'
+        empty.innerText = 'No trackers identified'
         parent.appendChild(empty)
     }
 }
